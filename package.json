@@ -1,5 +1,5 @@
 {
-    "name": "to-do-list-api",
+    "name": "to-do-list-http2",
     "version": "1.0.0",
     "description": "",
     "main": "src/index.ts",
@@ -37,11 +37,13 @@
         "@types/node": "^8.0.29",
         "express": "^4.17.1",
         "express-basic-auth": "^1.2.0",
+        "fastify": "^3.6.0",
         "joi": "^17.2.1",
+        "mime": "^2.4.6",
         "reflect-metadata": "^0.1.10",
         "sqlite3": "^5.0.0",
-        "typeorm": "0.2.25",
         "ts-node": "3.3.0",
+        "typeorm": "0.2.25",
         "typescript": "3.3.3333"
     },
     "devDependencies": {

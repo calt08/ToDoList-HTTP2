@@ -1,34 +1,67 @@
 import { Request, Response } from 'express';
 import { getRepository } from 'typeorm';
-import { ItemSchema, ItemPatchSchema } from '../Schemas/Items';
 import { Item } from '../entity/Item';
 import { User } from '../entity/User';
+import { ItemSchema, ItemPatchSchema } from '../Schemas/Items';
 import * as basicAuth from 'express-basic-auth';
-import * as http2 from 'http2';
+import * as fastify from 'fastify';
+// import * as http2 from 'http2';
+// import { pushFile, sendFile } from '../utils/http2.utils';
+// import { Stream } from 'stream';
 
 let version = 1;
 
-const itemsRouteHandler = async (req: http2.Http2ServerRequest, res: http2.Http2ServerResponse) => {
-    if (req.url == '/items' && req.method == 'GET') {
-        console.log("Items")
-        // let items = await getRepository(Item).find();
-        // let user = await getRepository(User).find();
 
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({
-            item: "gola"
-        }));
+async function route(fastify, options) {
+    fastify.get('/', allitems);
+    fastify.post('/', createitem)
+}
+export default route;
+
+//HANDLERS
 
 
-    } else {
 
+const allitems = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
+    let query = <Object>req.query;
+
+    let items = await getRepository(Item).find();
+    if (parseInt(<string>req.headers.etag) == version) {
+        return reply.status(304).send();
+    }
+    if (query['date']) {
+        const startDate = new Date(<string>query['startDate']);
+        items = items.filter(item => new Date(item.dueDate) >= startDate);
+    }
+    if (query['endDate']) {
+        const endDate = new Date(<string>query['endDate']);
+        items = items.filter(item => new Date(item.dueDate) <= endDate);
+    }
+    if (query['status']) {
+        items = items.filter(item => item.status == JSON.parse(<string>query['status']));
     }
 
-
-
+    return reply.status(200).send({ version, items });
 }
 
-export { itemsRouteHandler };
+const createitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
+    const validation = ItemSchema.validate(req.body);
+
+    if (validation.error) {
+        return reply.status(400).send(validation);
+    }
+
+    let user //= await getRepository(User).findOne({ where: { email: req.auth.user } });
+
+    validation.value.user = user; // Added the user to the object
+
+    const newItem = getRepository(Item).create(validation.value);
+    const result = await getRepository(Item).save(newItem);
+    version++;
+
+    return reply.status(201).send(result);
+}
+
 
 
 
@@ -47,6 +80,8 @@ async function Authorizer(username: string, password: string, cb: Function) {
     }
     return cb(null, false);
 }
+
+
 
 router.get('', async (req: Request, res: Response): Promise<Response> => {
     let items = await getRepository(Item).find();
