@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do List</title>
+</head>
+
+<body>
+    <h1>To Do List</h1>
+
+
+    <!-- style="display: none;" -->
+
+    <form action="/items" id="theform" method="post">
+        <h3 id="titleform">Create Item</h3>
+        <input type="text" placeholder="Description goes here" id="description" name="description" required>
+        <input type="checkbox" value="on" id="status" name="status">
+        <input type="datetime-local" id="dueDate" name="dueDate" required>
+
+        <input type="submit" value="Submit">
+    </form>
+
+
+    <script>
+        let theform = document.getElementById('theform');
+        theform.addEventListener('submit', function(e){
+            e.preventDefault();
+            var json = cleanData(this);
+            
+            var request = new XMLHttpRequest();
+            request.open("POST", "/items");
+            request.send(json);
+        })
+
+        function cleanData(it){
+            const formData = new FormData(it);
+            console.log(formData.entries());
+            var object = {};
+            formData.forEach((value, key) => {object[key] = value});
+            object['status'] == "on" ? object['status'] = true : object['status'] = false
+            object['userId'] = 1;
+            var json = JSON.stringify(object);
+
+            return json;
+        }
+    </script>
+
+<hr>
+    <table id="itemtable">
+        <tr>
+            <th>ID</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Due Date</th>
+        </tr>
+    </table>
+
+    <script>
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "/items", false);
+        var itemtable = document.querySelector('#itemtable > tbody')
+
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState === xhttp.DONE && xhttp.status === 200) {
+                let itemsjson = JSON.parse(xhttp.responseText);
+                populatetable(itemsjson);
+            }
+        }
+        xhttp.send();
+
+        function populatetable(itemsjson) {
+            itemsjson.items.forEach(item => {
+                var tr = document.createElement("tr");
+                Object.entries(item).forEach(([key, value]) => {
+                    if(key == 'version') return;
+                    var td = document.createElement("td");
+                    td.innerText = value;
+                    tr.appendChild(td);
+                });
+                var edit = document.createElement('button');
+                edit.setAttribute("id", item.id);
+                edit.innerHTML = 'Edit';
+                edit.onclick = editItem
+                var edittd = document.createElement("td");
+                edittd.appendChild(edit)
+                tr.appendChild(edittd);
+
+                itemtable.appendChild(tr);
+            });
+        }
+
+        function editItem() {
+            theform.action = "/items/"+this.id;
+            var description = document.getElementById('description');
+            description.setAttribute("value", this.description)
+            var titleform = document.getElementById('titleform');
+            titleform.innerHTML = "Item Update"
+
+
+            alert(this.id)
+        }
+
+    </script>
+</body>
+
+</html>

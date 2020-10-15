@@ -1,18 +1,14 @@
-import { Request, Response } from 'express';
 import { getRepository } from 'typeorm';
 import { Item } from '../entity/Item';
 import { User } from '../entity/User';
 import { ItemSchema, ItemPatchSchema } from '../Schemas/Items';
-import * as basicAuth from 'express-basic-auth';
+// import * as basicAuth from 'express-basic-auth';
 import * as fastify from 'fastify';
-// import * as http2 from 'http2';
-// import { pushFile, sendFile } from '../utils/http2.utils';
-// import { Stream } from 'stream';
 
 let version = 1;
 
-
 async function route(fastify, options) {
+    // fastify.register()
     fastify.get('/', allitems);
     fastify.post('/', createitem);
     fastify.put('/:id', putitem);
@@ -46,15 +42,16 @@ const allitems = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply
 }
 
 const createitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
-    const validation = ItemSchema.validate(req.body);
+    const body = JSON.parse(<string>req.body);
+    const validation = ItemSchema.validate(body);
 
     if (validation.error) return reply.status(400).send(validation);
 
-    let user //= await getRepository(User).findOne({ where: { email: req.auth.user } });
+    // let user //= await getRepository(User).findOne({ where: { email: req.auth.user } });
 
-    validation.value.user = user; // Added the user to the object
+    // validation.value.user = user; // Added the user to the object
 
-    const newItem = getRepository(Item).create(validation.value);
+    const newItem = await getRepository(Item).create(validation.value);
     const result = await getRepository(Item).save(newItem);
     version++;
 
@@ -62,6 +59,7 @@ const createitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyRep
 }
 
 const putitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
+    const body = JSON.parse(<string>req.body);
     const params = <Object>req.params;
     const validation = ItemSchema.validate(req.body);
 
@@ -70,7 +68,7 @@ const putitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyReply)
     let itemSelected = await getRepository(Item).findOne(parseInt(<string>params['id']));
     if (itemSelected) {
         if (parseInt(<string>req.headers.etag) == itemSelected.version) {
-            const itemUpdated = getRepository(Item).merge(itemSelected, req.body);
+            const itemUpdated = getRepository(Item).merge(itemSelected, body);
             const result = await getRepository(Item).save(itemUpdated);
             version++;
             return reply.status(200).send(result);
@@ -124,19 +122,3 @@ const deleteitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyRep
     return reply.status(409).send('You don\'t have the last version of this Item');
 }
 
-
-const router = require('express').Router();
-
-router.use(basicAuth({ authorizer: Authorizer, authorizeAsync: true }));
-
-async function Authorizer(username: string, password: string, cb: Function) {
-    let user = await getRepository(User).findOne({ where: { email: username } });
-    if (user) {
-        const userMatches = basicAuth.safeCompare(username, user.email)
-        const passwordMatches = basicAuth.safeCompare(password, user.password)
-        return cb(null, userMatches && passwordMatches);
-    }
-    return cb(null, false);
-}
-
-// export default router;
