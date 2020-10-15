@@ -24,6 +24,14 @@
 
 
     <script>
+        // AppStorage = window.localStorage;
+
+        function updateLocalStorage(itemsjson){
+            localStorage.removeItem('items');
+            localStorage.setItem('items', itemsjson);
+        }
+
+
         let theform = document.getElementById('theform');
         theform.addEventListener('submit', function(e){
             e.preventDefault();
@@ -65,6 +73,7 @@
         xhttp.onreadystatechange = function () {
             if (xhttp.readyState === xhttp.DONE && xhttp.status === 200) {
                 let itemsjson = JSON.parse(xhttp.responseText);
+                updateLocalStorage(JSON.stringify(itemsjson));
                 populatetable(itemsjson);
             }
         }
@@ -96,12 +105,28 @@
             var description = document.getElementById('description');
             description.setAttribute("value", this.description)
             var titleform = document.getElementById('titleform');
-            titleform.innerHTML = "Item Update"
+            titleform.innerHTML = "Update Item"
 
 
             alert(this.id)
         }
+    </script>
 
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        // Registration was successful
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        // registration failed :(
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
     </script>
 </body>
 
