@@ -10,7 +10,7 @@
 <body>
     <h1>To Do List</h1>
 
-    <form action="/items" id="theform" method="post">
+    <form action="/items" id="theform" method="POST">
         <h3 id="titleform">Create Item</h3>
         <input type="text" placeholder="Description goes here" id="description" name="description" required>
         <input type="checkbox" value="on" id="status" name="status">
@@ -21,8 +21,6 @@
 
 
     <script>
-        // AppStorage = window.localStorage;
-
         console.log(navigator.onLine)
 
         function updateLocalStorage(itemsjson){
@@ -30,29 +28,65 @@
             localStorage.setItem('items', itemsjson);
         }
 
-        // function createItem(){
-        //     if(navigator.onLine){
-        //         if(localStorage.getItem('temp')){ //!=null
+        function updateServer(itemsjson){
+            let tempJson = JSON.parse(localStorage.getItem('temp'));
+            tempJson.items.forEach((item) => createItem(JSON.stringify(item)))
 
-        //         }
+            localStorage.removeItem('temp');
 
-        //     }
-        //     else{
+        }
 
+        function createItem(newItem){
+            if(navigator.onLine){
+                var request = new XMLHttpRequest();
+                request.open("POST", "/items");
+                request.send(newItem);
+                location.reload();
 
+            }
+            else{
+                let prevItems = {items:[]};
+                if(localStorage.getItem('temp')){
+                    prevItems = JSON.parse(localStorage.getItem('temp'));
+                    localStorage.removeItem('temp');            
+                }
+                prevItems['items'].push(JSON.parse(newItem));
+                localStorage.setItem('temp', JSON.stringify(prevItems));
+            }
+        }
 
-        //     }
-        // }
+        function ReadItems(){
+            if(navigator.onLine){
+                if(localStorage.getItem('temp')){ 
+                    updateServer();
+                }
+                var xhttp = new XMLHttpRequest();
+                xhttp.open("GET", "/items", false);
 
+                xhttp.onreadystatechange = function () {
+                    if (xhttp.readyState === xhttp.DONE && xhttp.status === 200) {
+                        let itemsjson = JSON.parse(xhttp.responseText);
+                        updateLocalStorage(JSON.stringify(itemsjson));
+                        populatetable(itemsjson);
+                    }
+                }
+                xhttp.send();
+            }
+            else{
+                let itemsjson = JSON.parse(localStorage.getItem('items'));
+                populatetable(itemsjson);
+                if(localStorage.getItem('temp')){
+                    let tempItemsjson = JSON.parse(localStorage.getItem('temp'));
+                    populatetable(tempItemsjson, true);
+                }
+            }
+        }
 
         let theform = document.getElementById('theform');
         theform.addEventListener('submit', function(e){
             e.preventDefault();
-            var json = cleanData(this);
-            
-            var request = new XMLHttpRequest();
-            request.open("POST", "/items");
-            request.send(json);
+            var newItem = cleanData(this);
+            createItem(newItem);
         })
 
         function cleanData(it){
@@ -63,12 +97,11 @@
             object['status'] == "on" ? object['status'] = true : object['status'] = false
             object['userId'] = 1;
             var json = JSON.stringify(object);
-
             return json;
         }
     </script>
 
-<hr>
+    <hr>
     <table id="itemtable">
         <tr>
             <th>ID</th>
@@ -79,34 +112,25 @@
     </table>
 
     <script>
-        var xhttp = new XMLHttpRequest();
-        xhttp.open("GET", "/items", false);
-        var itemtable = document.querySelector('#itemtable > tbody')
+        var itemtable = document.querySelector('#itemtable > tbody');
+        ReadItems();
 
-        xhttp.onreadystatechange = function () {
-            if (xhttp.readyState === xhttp.DONE && xhttp.status === 200) {
-                let itemsjson = JSON.parse(xhttp.responseText);
-                updateLocalStorage(JSON.stringify(itemsjson));
-                populatetable(itemsjson);
-            }
-        }
-        xhttp.send();
-
-        function populatetable(itemsjson) {
+        function populatetable(itemsjson, temp = false) {
             itemsjson.items.forEach(item => {
                 var tr = document.createElement("tr");
                 Object.entries(item).forEach(([key, value]) => {
                     if(key == 'version') return;
                     var td = document.createElement("td");
                     td.innerText = value;
+                    if(key == 'id' && temp) td.innerText = "TEMP"
                     tr.appendChild(td);
                 });
-                var edit = document.createElement('button');
-                edit.setAttribute("id", item.id);
-                edit.innerHTML = 'Edit';
-                edit.onclick = editItem
+                var editBtn = document.createElement('button');
+                editBtn.setAttribute("id", item.id);
+                editBtn.innerHTML = 'Edit';
+                editBtn.onclick = editItem
                 var edittd = document.createElement("td");
-                edittd.appendChild(edit)
+                edittd.appendChild(editBtn)
                 tr.appendChild(edittd);
 
                 itemtable.appendChild(tr);
@@ -120,8 +144,7 @@
             var titleform = document.getElementById('titleform');
             titleform.innerHTML = "Update Item"
 
-
-            alert(this.id)
+            alert("You will edit Item id: " + this.id)
         }
     </script>
 
