@@ -1,51 +1,32 @@
 import "reflect-metadata";
-import { createConnection, getRepository } from "typeorm";
-import * as express from "express";
-import * as fs from 'fs';
-import * as path from 'path';
+import { createConnection } from "typeorm";
 import * as fastify from 'fastify';
-// import * as http2 from 'http2';
-// import { pushFile, sendFile } from './utils/http2.utils';
-import * as basicAuth from 'fastify-basic-auth';
-import { staticServe } from 'fastify-auto-push';
+import { readFromFile } from './utils/nonblocking';
+import * as fs from 'fs';
 
+createConnection(); //DB
 
-createConnection();
-
+// Creating server object
 const server = fastify.fastify({
     http2: true,
     https: {
-        key: fs.readFileSync(__dirname + "/secret/key.pem"),
-        cert: fs.readFileSync(__dirname + "/secret/cert.pem")
-    }
+        key: fs.readFileSync(__dirname + "/secret/example.com+5-key.pem"),
+        cert: fs.readFileSync(__dirname + "/secret/example.com+5.pem")
+    } // Weirdly when I try to read this on a Non-blocking way some routes stop working
 })
-// async function Authorizer(username: string, password: string, req: fastify.FastifyRequest, reply: fastify.FastifyReply) {
-//     let user = await getRepository(User).findOne({ where: { email: username } });
-//     if (user) {
-//         if (username !== user.email || password !== user.password) {
-//             return new Error('Winter is coming')
-//         }
-//         // const userMatches = basicAuth.safeCompare(username, user.email)
-//         // const passwordMatches = basicAuth.safeCompare(password, user.password)
-//         // return cb(null, userMatches && passwordMatches);
-//     }
-//     // return cb(null, false);
-// }
-
-// server.register(require('fastify-basic-auth'), { Authorizer })
-
-
-
 
 //Import Routes
 import itemroute from './Routes/Items.route';
-import { User } from "./entity/User";
 
 //Routes
 server.register(itemroute, { prefix: '/items' })
 
-server.get('/', function (request, reply) {
-    reply.type("text/html").send(fs.readFileSync('./static/index.html'));
+server.get('/', async function (request, reply) {
+    reply.type("text/html").send(await readFromFile('./static/index.html'));
+})
+
+server.get('/sw.js', async function (request, reply) {
+    reply.type("text/javascript").send(await readFromFile('./static/sw.js'));
 })
 
 server.listen(3001, () => console.log("Server listening on port 3001"));

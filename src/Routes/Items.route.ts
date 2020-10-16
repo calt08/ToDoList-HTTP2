@@ -1,14 +1,11 @@
 import { getRepository } from 'typeorm';
 import { Item } from '../entity/Item';
-import { User } from '../entity/User';
 import { ItemSchema, ItemPatchSchema } from '../Schemas/Items';
-// import * as basicAuth from 'express-basic-auth';
 import * as fastify from 'fastify';
 
 let version = 1;
 
 async function route(fastify, options) {
-    // fastify.register()
     fastify.get('/', allitems);
     fastify.post('/', createitem);
     fastify.put('/:id', putitem);
@@ -46,11 +43,8 @@ const createitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyRep
     const validation = ItemSchema.validate(body);
 
     if (validation.error) return reply.status(400).send(validation);
-
     // let user //= await getRepository(User).findOne({ where: { email: req.auth.user } });
-
     // validation.value.user = user; // Added the user to the object
-
     const newItem = await getRepository(Item).create(validation.value);
     const result = await getRepository(Item).save(newItem);
     version++;
@@ -87,15 +81,9 @@ const patchitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyRepl
     let itemSelected = await getRepository(Item).findOne(parseInt(<string>params['id']));
     if (itemSelected) {
         if (parseInt(<string>req.headers.etag) == itemSelected.version) {
-            if (validation.value.description) {
-                itemSelected.description = validation.value.description;
-            }
-            if (validation.value.status) {
-                itemSelected.status = validation.value.status;
-            }
-            if (validation.value.dueDate) {
-                itemSelected.dueDate = validation.value.dueDate;
-            }
+            if (validation.value.description) itemSelected.description = validation.value.description;
+            if (validation.value.status) itemSelected.status = validation.value.status;
+            if (validation.value.dueDate) itemSelected.dueDate = validation.value.dueDate;
             const result = await getRepository(Item).save(itemSelected);
             version++;
             return reply.status(200).send(result);
@@ -121,4 +109,3 @@ const deleteitem = async (req: fastify.FastifyRequest, reply: fastify.FastifyRep
     }
     return reply.status(409).send('You don\'t have the last version of this Item');
 }
-

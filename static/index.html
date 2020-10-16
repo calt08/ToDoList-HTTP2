@@ -10,9 +10,6 @@
 <body>
     <h1>To Do List</h1>
 
-
-    <!-- style="display: none;" -->
-
     <form action="/items" id="theform" method="post">
         <h3 id="titleform">Create Item</h3>
         <input type="text" placeholder="Description goes here" id="description" name="description" required>
@@ -26,10 +23,26 @@
     <script>
         // AppStorage = window.localStorage;
 
+        console.log(navigator.onLine)
+
         function updateLocalStorage(itemsjson){
             localStorage.removeItem('items');
             localStorage.setItem('items', itemsjson);
         }
+
+        // function createItem(){
+        //     if(navigator.onLine){
+        //         if(localStorage.getItem('temp')){ //!=null
+
+        //         }
+
+        //     }
+        //     else{
+
+
+
+        //     }
+        // }
 
 
         let theform = document.getElementById('theform');
